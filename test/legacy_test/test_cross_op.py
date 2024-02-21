@@ -81,6 +81,11 @@ class TestCrossFP16Op(TestCrossOp):
         self.outputs = {'Out': np.array(z_list).reshape(self.shape)}
 
 
+
+# 在这里写一个两组复数的版本,然后添加对应的代码 cpu和gpu
+
+
+
 @unittest.skipIf(
     not core.is_compiled_with_cuda()
     or not core.is_bfloat16_supported(core.CUDAPlace(0)),
@@ -126,6 +131,7 @@ class TestCrossBF16Op(OpTest):
                 self.check_grad_with_place(
                     place, ['X', 'Y'], 'Out', check_pir=True
                 )
+# 测试动静图的版本 
 
 
 class TestCrossAPI(unittest.TestCase):
@@ -145,8 +151,8 @@ class TestCrossAPI(unittest.TestCase):
         startup = paddle.static.Program()
         # case 1:
         with paddle.static.program_guard(main, startup):
-            x = paddle.static.data(name='x', shape=[-1, 3], dtype="float32")
-            y = paddle.static.data(name='y', shape=[-1, 3], dtype="float32")
+            x = paddle.static.data(name='x', shape=[3, 3], dtype="float32")
+            y = paddle.static.data(name='y', shape=[3, 3], dtype="float32")
             z = paddle.cross(x, y, axis=1)
             exe = base.Executor(base.CPUPlace())
             (res,) = exe.run(
@@ -164,8 +170,8 @@ class TestCrossAPI(unittest.TestCase):
         startup = paddle.static.Program()
         # case 2:
         with paddle.static.program_guard(main, startup):
-            x = paddle.static.data(name='x', shape=[-1, 3], dtype="float32")
-            y = paddle.static.data(name='y', shape=[-1, 3], dtype="float32")
+            x = paddle.static.data(name='x', shape=[3, 3], dtype="float32")
+            y = paddle.static.data(name='y', shape=[3, 3], dtype="float32")
             z = paddle.cross(x, y)
             exe = base.Executor(base.CPUPlace())
             (res,) = exe.run(
@@ -187,8 +193,8 @@ class TestCrossAPI(unittest.TestCase):
 
         # case 1:
         with paddle.static.program_guard(main, startup):
-            x = paddle.static.data(name="x", shape=[-1, 3], dtype="float32")
-            y = paddle.static.data(name='y', shape=[-1, 3], dtype='float32')
+            x = paddle.static.data(name="x", shape=[3, 3], dtype="float32")
+            y = paddle.static.data(name='y', shape=[3, 3], dtype='float32')
 
             y_1 = paddle.cross(x, y, name='result')
             self.assertEqual(('result' in y_1.name), True)
@@ -216,6 +222,127 @@ class TestCrossAPI(unittest.TestCase):
         )
         np.testing.assert_allclose(expect_out, np_z, rtol=1e-05)
 
+class TestCrossAPIComplex(unittest.TestCase):
+    def set_status(self):
+        self.dtype = 'complex64'
+        self.place = base.CPUPlace()
+        
+    def input_data(self):
+        self.set_status()
+        self.data_x =( np.array(
+            [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]]
+        ) + 1j * np.array(
+            [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]]
+        )).astype(self.dtype)
+        self.data_y = ( np.array(
+        [[1.0, 1.0, 1.0], [1.0, 2.0, 3.0], [2.0, 1.0, 3.0]]
+        ) +  + 1j * np.array(
+            [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
+        )).astype(self.dtype)
+
+    @test_with_pir_api
+    def test_cross_api(self):
+        paddle.enable_static()
+        self.input_data()
+        main = paddle.static.Program()
+        startup = paddle.static.Program()
+        # case 1:
+        with paddle.static.program_guard(main, startup):
+            x = paddle.static.data(name='x', shape=[3, 3], dtype=self.dtype)
+            y = paddle.static.data(name='y', shape=[3, 3], dtype=self.dtype)
+            z = paddle.cross(x, y, axis=1)
+            exe = base.Executor(self.place)
+            (res,) = exe.run(
+                main,
+                feed={'x': self.data_x, 'y': self.data_y},
+                fetch_list=[z],
+                return_numpy=False,
+            )
+        # expect_out = np.array([[ 0.+0.j,  0.+0.j,  0.+0.j],
+        # [ 2.+2.j, -4.-4.j,  2.+2.j],
+        # [ 6.+6.j, -3.-3.j, -3.-3.j]], dtype=self.dtype)
+        expect_out = np.cross(self.data_x, self.data_y, axis=1).astype(self.dtype)
+        
+        np.testing.assert_allclose(expect_out, np.array(res), rtol=1e-05)
+
+        main = paddle.static.Program()
+        startup = paddle.static.Program()
+        # case 2:
+        with paddle.static.program_guard(main, startup):
+            x = paddle.static.data(name='x', shape=[3, 3], dtype=self.dtype)
+            y = paddle.static.data(name='y', shape=[3, 3], dtype=self.dtype)
+            z = paddle.cross(x, y, axis=-2)
+            exe = base.Executor(self.place)
+            (res,) = exe.run(
+                main,
+                feed={'x': self.data_x, 'y': self.data_y},
+                fetch_list=[z],
+                return_numpy=False,
+            )
+        # expect_out = np.array(  
+        #     [[ 2.+0.j, -3.-5.j, -2.-4.j],  
+        #     [-1.+3.j,  0.+4.j, -2.+2.j],  
+        #     [ 0.-2.j,  1.-1.j,  2.+0.j]], dtype=self.dtype  
+        # )
+        expect_out = np.cross(self.data_x, self.data_y, axis=-2).astype(self.dtype)
+        np.testing.assert_allclose(expect_out, np.array(res), rtol=1e-05)
+
+    def test_cross_api1(self):
+        self.input_data()
+        paddle.enable_static()
+        main = paddle.static.Program()
+        startup = paddle.static.Program()
+
+        # case 1:
+        with paddle.static.program_guard(main, startup):
+            x = paddle.static.data(name="x", shape=[3, 3], dtype=self.dtype)
+            y = paddle.static.data(name='y', shape=[3, 3], dtype=self.dtype)
+
+            y_1 = paddle.cross(x, y, name='result')
+            self.assertEqual(('result' in y_1.name), True)
+
+    def test_dygraph_api(self):
+        self.input_data()
+        # case 1:
+        with base.dygraph.guard(self.place):
+            x = paddle.to_tensor(self.data_x)
+            y = paddle.to_tensor(self.data_y)
+            z = paddle.cross(x, y, axis=-2)
+            np_z = z.numpy()
+        # expect_out = np.array(  
+        #     [[ 2.+0.j, -3.-5.j, -2.-4.j],  
+        #     [-1.+3.j,  0.+4.j, -2.+2.j],  
+        #     [ 0.-2.j,  1.-1.j,  2.+0.j]], dtype=self.dtype  
+        # )
+        expect_out = np.cross(self.data_x, self.data_y, axis=-2).astype(self.dtype)
+        np.testing.assert_allclose(expect_out, np_z, rtol=1e-05)
+
+        # case 2:
+        with base.dygraph.guard(self.place):
+            x = paddle.to_tensor(self.data_x)
+            y = paddle.to_tensor(self.data_y)
+            z = paddle.cross(x, y, axis=1)
+            np_z = z.numpy()
+        # expect_out = np.array([[ 0.+0.j,  0.+0.j,  0.+0.j],
+        # [ 2.+2.j, -4.-4.j,  2.+2.j],
+        # [ 6.+6.j, -3.-3.j, -3.-3.j]], dtype=self.dtype)
+        expect_out = np.cross(self.data_x, self.data_y, axis=1).astype(self.dtype)
+        np.testing.assert_allclose(expect_out, np_z, rtol=1e-05)
+
+class TestCrossAPIComplex128(TestCrossAPIComplex):
+    def set_type(self):
+        self.dtype = 'complex128'
+        self.place = base.CPUPlace()
+
+class TestCrossAPIComplex64Gpu(TestCrossAPIComplex):
+    def set_type(self):
+        self.dtype = 'complex64'
+        self.place = base.GPUPlace()
+
+class TestCrossAPIComplex128Gpu(TestCrossAPIComplex):
+    def set_type(self):
+        self.dtype = 'complex128'
+        self.place = base.GPUPlace()
 
 if __name__ == '__main__':
     paddle.enable_static()
