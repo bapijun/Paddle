@@ -225,20 +225,16 @@ class TestCrossAPI(unittest.TestCase):
 class TestCrossAPIComplex(unittest.TestCase):
     def set_status(self):
         self.dtype = 'complex64'
+        self.part_dtype = 'float32'
+        self.shape = [3, 3]
         self.place = base.CPUPlace()
         
     def input_data(self):
         self.set_status()
-        self.data_x =( np.array(
-            [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]]
-        ) + 1j * np.array(
-            [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]]
-        )).astype(self.dtype)
-        self.data_y = ( np.array(
-        [[1.0, 1.0, 1.0], [1.0, 2.0, 3.0], [2.0, 1.0, 3.0]]
-        ) +  + 1j * np.array(
-            [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]
-        )).astype(self.dtype)
+        self.data_x = (np.random.randint(0, 10, size=(self.shape)).astype(self.part_dtype) + 1j * np.random.randint(0, 10, size=(self.shape)).astype(self.part_dtype)).astype(self.dtype)
+        
+        self.data_y = (np.random.randint(0, 10, size=(self.shape)).astype(self.part_dtype) + 1j * np.random.randint(0, 10, size=(self.shape)).astype(self.part_dtype)).astype(self.dtype)
+        
 
     @test_with_pir_api
     def test_cross_api(self):
@@ -248,8 +244,8 @@ class TestCrossAPIComplex(unittest.TestCase):
         startup = paddle.static.Program()
         # case 1:
         with paddle.static.program_guard(main, startup):
-            x = paddle.static.data(name='x', shape=[3, 3], dtype=self.dtype)
-            y = paddle.static.data(name='y', shape=[3, 3], dtype=self.dtype)
+            x = paddle.static.data(name='x', shape=self.shape, dtype=self.dtype)
+            y = paddle.static.data(name='y', shape=self.shape, dtype=self.dtype)
             z = paddle.cross(x, y, axis=1)
             exe = base.Executor(self.place)
             (res,) = exe.run(
@@ -269,8 +265,8 @@ class TestCrossAPIComplex(unittest.TestCase):
         startup = paddle.static.Program()
         # case 2:
         with paddle.static.program_guard(main, startup):
-            x = paddle.static.data(name='x', shape=[3, 3], dtype=self.dtype)
-            y = paddle.static.data(name='y', shape=[3, 3], dtype=self.dtype)
+            x = paddle.static.data(name='x', shape=self.shape, dtype=self.dtype)
+            y = paddle.static.data(name='y', shape=self.shape, dtype=self.dtype)
             z = paddle.cross(x, y, axis=-2)
             exe = base.Executor(self.place)
             (res,) = exe.run(
