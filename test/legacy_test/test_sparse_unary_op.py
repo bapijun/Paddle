@@ -135,18 +135,22 @@ class TestSparseUnary(unittest.TestCase):
                     dense_func, sparse_func, 'csr', 'float32', attr1, attr2
                 )
 
-    def test_sparse_sinh(self):
-        self.compare_with_dense(paddle.sinh, paddle.sparse.sinh, 'float16')
-        self.compare_with_dense(paddle.sinh, paddle.sparse.sinh, 'float32')
-        self.compare_with_dense(paddle.sinh, paddle.sparse.sinh, 'float64')
-        self.compare_with_dense(paddle.sinh, paddle.sparse.sinh, 'complex64')
-        self.compare_with_dense(paddle.sinh, paddle.sparse.sinh, 'complex128')
+    def test_sparse_tan(self):
+        self.compare_with_dense(paddle.tan, paddle.sparse.tan, 'float16')
+        self.compare_with_dense(paddle.tan, paddle.sparse.tan, 'float32')
+        self.compare_with_dense(paddle.tan, paddle.sparse.tan, 'float64')
+        self.compare_with_dense(paddle.tan, paddle.sparse.tan, 'complex64')
+        self.compare_with_dense(paddle.tan, paddle.sparse.tan, 'complex128')
+
+    def test_sparse_tanh(self):
+        self.compare_with_dense(paddle.tanh, paddle.sparse.tanh, 'float16')
+        self.compare_with_dense(paddle.tanh, paddle.sparse.tanh, 'float32')
+        self.compare_with_dense(paddle.tanh, paddle.sparse.tanh, 'float64')
+        self.compare_with_dense(paddle.tanh, paddle.sparse.tanh, 'complex64')
+        self.compare_with_dense(paddle.tanh, paddle.sparse.tanh, 'complex128')
 
     def test_sparse_sin(self):
         self.compare_with_dense(paddle.sin, paddle.sparse.sin)
-
-    def test_sparse_tan(self):
-        self.compare_with_dense(paddle.tan, paddle.sparse.tan)
 
     def test_sparse_asin(self):
         self.compare_with_dense(paddle.asin, paddle.sparse.asin)
@@ -154,8 +158,8 @@ class TestSparseUnary(unittest.TestCase):
     def test_sparse_atan(self):
         self.compare_with_dense(paddle.atan, paddle.sparse.atan)
 
-    def test_sparse_tanh(self):
-        self.compare_with_dense(paddle.tanh, paddle.sparse.tanh)
+    def test_sparse_sinh(self):
+        self.compare_with_dense(paddle.sinh, paddle.sparse.sinh)
 
     def test_sparse_asinh(self):
         self.compare_with_dense(paddle.asinh, paddle.sparse.asinh)
